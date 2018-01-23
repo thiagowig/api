@@ -1,73 +1,128 @@
 #%RAML 1.0
-title: Foo REST Services API
-version:
-protocols: [HTTPS]
-baseUri: http://myapi.mysite.com/api/{version}
+title: Foo REST Services
+version: v1
+protocols: [ HTTPS ]
+baseUri: http://rest-api.baeldung.com/api/{version}
 mediaType: application/json
+securedBy: basicAuth
 securitySchemes:
   basicAuth:
+    description: Each request must contain the headers necessary for
+                 basic authentication
+    type: Basic Authentication
     describedBy:
       headers:
         Authorization:
-          description: sed to send the Base64-encoded "username:password" credentials
+          description: Used to send the Base64 encoded "username:password"
+                       credentials
           type: string
-        responses:
-          401:
-            description: securitySchemes:
-  basicAuth:
-    description: Each request must contain the headers necessary for
-                 basic authentication
-    type: Basic Authentication
-    describedBy:
-      headers:
-        Authorization:
-          description: Used to send the Base64-encoded "username:password"
-                       credentials
-          type: string
-      responses:
-        401:
-          description: |
-            Unauthorized. Either the provided username and password
-            combination is invalid, or the user is not allowed to access
-            the content provided by the requested URL.
+      responses:
+        401:
+          description: |
+            Unauthorized. Either the provided username and password
+            combination is invalid, or the user is not allowed to access
+            the content provided by the requested URL.
 
-types:
-  Foo: !include types/Foo.raml
-  Error: !include types/Error.raml
-
-/foos:
-  get:
-    description: List of all foos
-    queryParameters:
-      name?: string
-      ownerName?: string
-    responses:
+traits: 
+  hasResponseItem:
+    responses: 
       200:
+        description: THE TYPE NAME IS <<typeName>>
+        body: 
+          application/json:
+            type: <<typeName>>
+  hasNotFound:
+    responses: 
+      404:
         body:
           application/json:
-            type: Foo[]
-            example: !include examples/Foos.json
+            type: Error
+            example: !include examples/Error.json
 
+resourceTypes: 
+  crudResourceType:
+    usage: Use this resourceType to represent anu collection of items
+    description: A collection of <<resourcePathName>>
+    get:
+      description: Get all <<resourcePathName>>, optionally filtered
+      responses: 
+        200:
+          body:
+            application/json:
+              type: <<typeName>>[]
+    post:
+      description: Create a new <<resourcePathName|singularize>>
+      responses: 
+        201:
+          body:
+            application/json:
+              type: <<typeName>>
+
+types:
+  Foo:   !include types/Foo.raml
+  Error: !include types/Error.raml
+/foos:
+  get:
+    type: {crudResourceType: { "typeName": "Foo" }}
+    queryParameters:
+      name: string
+      ownerName?: string
+    responses:
   post:
-    description: Create new foo
+    description: Create a new Foo
     body:
       application/json:
         type: Foo
-        example: !include examples/Foo.json
-    responses:
-      201:
-        body:
-          application/json:
-            type: Foo
-            example: !include examples/Foo.json
+        example: !include examples/Foo.json    
   /{id}:
     get:
+      description: Get a Foo by id
       responses:
         200:
           body:
             application/json:
-              type: foo
+              type: Foo
               example: !include examples/Foo.json
-    post:
+        404:
+          body:
+            application/json:
+              type: Error
+              example: !include examples/Error.json
+    put:
+      description: Update a Foo by id
+      body:
+        application/json:
+          type: Foo
+          example: !include examples/Foo.json
+      responses:
+        200:
+          body:
+            application/json:
+              type: Foo
+              example: !include examples/Foo.json
+        404:
+          body:
+            application/json:
+              type: Error
+              example: !include examples/Error.json
+    delete:
+      description: Delete a Foo by id
+      responses:
+        204:
+        404:
+          body:
+            application/json:
+              type: Error
+              example: !include examples/Error.json
   /name/{name}:
     get:
+      description: List all Foos with a certain name
+      responses:
+        200:
+          body:
+            application/json:
+              type: Foo[]
+              example: !include examples/Foos.json
+/bars:
+  get:
+    is: [ hasResponseItem: { typeName: Bar }, hasNotFound ]
